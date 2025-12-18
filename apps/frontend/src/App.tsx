@@ -82,7 +82,11 @@ export default function App() {
   const [reloadTick, setReloadTick] = useState(0);
   const [assigningTodoId, setAssigningTodoId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
-  const sseBaseUrl = (import.meta.env.VITE_SSE_BASE_URL as string | undefined) ?? null;
+  const sseBaseUrlRaw = (import.meta.env.VITE_SSE_BASE_URL as string | undefined) ?? null;
+  const sseBaseUrl =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? null
+      : sseBaseUrlRaw;
   const [userQuery, setUserQuery] = useState("");
   const [userResults, setUserResults] = useState<UserSummary[]>([]);
   const [userSearchStatus, setUserSearchStatus] = useState<"idle" | "loading" | "error" | "ok">("idle");
