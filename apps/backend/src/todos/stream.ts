@@ -5,20 +5,32 @@ import { getFirebaseAdminApp } from "../firebaseAdmin.js";
 import { readSessionCookie } from "../session.js";
 
 export async function todosStream(req: Request, res: Response) {
+  const tokenParam = typeof req.query.token === "string" ? req.query.token : null;
   const sessionCookie = readSessionCookie(req);
-  if (!sessionCookie) {
+  if (!tokenParam && !sessionCookie) {
     res.status(401).json({ error: "Missing session" });
     return;
   }
 
   try {
     const app = getFirebaseAdminApp();
-    const decoded = await getAuth(app).verifySessionCookie(sessionCookie, true);
+    const auth = getAuth(app);
+
+    const decoded = tokenParam
+      ? await auth.verifyIdToken(tokenParam)
+      : await auth.verifySessionCookie(sessionCookie as string, true);
+
+    const origin = req.header("origin");
+    if (origin === "https://collab-todo-66eb2.web.app" || origin === "https://collab-todo-66eb2.firebaseapp.com") {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
 
     res.status(200);
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders?.();
 
     const uid = decoded.uid;
@@ -27,10 +39,15 @@ export async function todosStream(req: Request, res: Response) {
 
     let started = false;
     let debounce: NodeJS.Timeout | null = null;
+    let keepAlive: NodeJS.Timeout | null = null;
 
     function send(event: string, data: unknown) {
       res.write(`event: ${event}\n`);
       res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+
+    function sendComment() {
+      res.write(`: keep-alive ${Date.now()}\n\n`);
     }
 
     function scheduleEmit() {
@@ -66,9 +83,15 @@ export async function todosStream(req: Request, res: Response) {
     started = true;
     send("ready", { ok: true });
 
+    keepAlive = setInterval(() => {
+      if (!started) return;
+      sendComment();
+    }, 25000);
+
     req.on("close", () => {
       started = false;
       if (debounce) clearTimeout(debounce);
+      if (keepAlive) clearInterval(keepAlive);
       unsubOwned();
       unsubAssigned();
       res.end();

@@ -81,6 +81,13 @@ Current choice:
     - Backend mints an HttpOnly `__session` cookie via Firebase Admin `createSessionCookie`.
     - Browser automatically sends the cookie when connecting to `GET /api/todos/stream`.
 
+Production note:
+
+- Some CDN/edge proxies can time out or buffer long-lived streaming responses. If `GET /api/todos/stream` via Firebase Hosting rewrites times out, the frontend can be configured to connect SSE **directly to the Cloud Run service URL** instead.
+- Set `VITE_SSE_BASE_URL` to your Cloud Run base URL (e.g. `https://<service>.<region>.run.app`). When set:
+  - SSE connects to `${VITE_SSE_BASE_URL}/api/todos/stream?token=<firebaseIdToken>` (EventSource cannot send headers).
+  - The backend accepts either the session cookie or a `token` query param for SSE authentication.
+
 Data & API contracts:
 
 - Runtime validation is implemented with **Zod** using shared schemas exported from `@arkivia/shared`.

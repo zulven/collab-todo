@@ -81,6 +81,8 @@ export default function App() {
   const [todosState, setTodosState] = useState<TodosState>({ status: "idle", todos: [] });
   const [reloadTick, setReloadTick] = useState(0);
   const [assigningTodoId, setAssigningTodoId] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const sseBaseUrl = (import.meta.env.VITE_SSE_BASE_URL as string | undefined) ?? null;
   const [userQuery, setUserQuery] = useState("");
   const [userResults, setUserResults] = useState<UserSummary[]>([]);
   const [userSearchStatus, setUserSearchStatus] = useState<"idle" | "loading" | "error" | "ok">("idle");
@@ -108,6 +110,7 @@ export default function App() {
 
   useEffect(() => {
     if (authState.status !== "signed_in") return;
+    if (!sseBaseUrl && !sessionReady) return;
 
     const user = authState.user;
     if (!user) return;
@@ -127,7 +130,11 @@ export default function App() {
     }
 
     async function connect() {
-      es = new EventSource("/api/todos/stream");
+      const streamUrl = sseBaseUrl
+        ? `${sseBaseUrl.replace(/\/$/, "")}/api/todos/stream?token=${encodeURIComponent(await user.getIdToken())}`
+        : "/api/todos/stream";
+
+      es = new EventSource(streamUrl);
 
       es.addEventListener("todos_changed", scheduleRefresh);
       es.addEventListener("ready", scheduleRefresh);
@@ -156,10 +163,11 @@ export default function App() {
         // ignore
       }
     };
-  }, [authState]);
+  }, [authState, sessionReady, sseBaseUrl]);
 
   useEffect(() => {
     if (authState.status !== "signed_out") return;
+    setSessionReady(false);
     void fetch("/api/session", { method: "DELETE" });
   }, [authState]);
 
@@ -175,6 +183,7 @@ export default function App() {
             authorization: `Bearer ${token}`
           }
         });
+        setSessionReady(true);
         await fetch("/api/users/me", {
           method: "POST",
           headers: {
