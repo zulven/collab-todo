@@ -142,7 +142,7 @@ vite.config.ts.timestamp-*
 *.pdf
 
 # assignment
-# Assignment.md
+Assignment.md
 
 # firebase service account private key
 apps/backend/*firebase-adminsdk*.json
