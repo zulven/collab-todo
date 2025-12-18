@@ -216,9 +216,13 @@ Firebase Auth (Google sign-in):
 
 Backend Firebase Admin (verifying ID tokens):
 
-- Create a **service account** in Google Cloud Console (Project settings -> Service accounts) and download the JSON key.
-- Do **not** commit the JSON file to the repository.
-- Set the environment variable `GOOGLE_APPLICATION_CREDENTIALS` to the path of the JSON file before running the backend.
+- Local development:
+  - Create a **service account** in Google Cloud Console (Project settings -> Service accounts) and download the JSON key.
+  - Do **not** commit the JSON file to the repository.
+  - Set the environment variable `GOOGLE_APPLICATION_CREDENTIALS` to the path of the JSON file before running the backend.
+- Cloud Run:
+  - Prefer using the Cloud Run runtime service account via Application Default Credentials (no JSON key file).
+  - Grant the service account permissions to access Firestore as needed.
 
 Firebase Hosting note:
 
