@@ -1,4 +1,4 @@
-# arkivia-collab-todo
+# collab-todo
 
 ## Architecture overview
 
@@ -46,6 +46,24 @@ Current choice:
 
 - The current implementation uses backend APIs for reads/writes.
 - Realtime can be added either by polling or by implementing Option A (client `onSnapshot` for read-only updates) while keeping writes in the backend.
+
+## Features implemented
+
+- User authentication via Firebase Auth (Google sign-in)
+- Backend verification of Firebase ID tokens (Firebase Admin)
+- TODO CRUD (create/update/delete)
+- Ownership + visibility rules
+  - Users can see tasks they own or that are assigned to them
+  - Owner-only delete (documented by implementation)
+- Collaboration
+  - Assign tasks to other users using a searchable user picker (search by name/email)
+  - Users become searchable after signing in once (backend upserts `users/{uid}`)
+- Task fields
+  - `title`, `description` (plain text), `status`, `priority`, `createdByUid`, `ownerUid`, `assigneeUids`
+- Ordering
+  - Shared ordering persisted to Firestore via `position`
+  - UI supports drag-and-drop reorder (persists via backend)
+- UI theme
 
 ## Project structure
 
@@ -128,6 +146,17 @@ Notes:
   - `GET /api/*` (frontend) -> `http://localhost:3000/*` (backend)
   - Example: `GET /api/health` calls the backend `GET /health` endpoint.
 
+Backend API (selected):
+
+- `GET /todos`
+- `POST /todos`
+- `PATCH /todos/:id`
+- `DELETE /todos/:id`
+- `PATCH /todos/reorder`
+- `POST /users/me` (upsert profile for search)
+- `GET /users?q=...` (search users)
+- `POST /users/lookup` (resolve UIDs -> profiles)
+
 Firebase (local emulators):
 
 ```bash
@@ -161,6 +190,6 @@ firebase deploy
 
 Next steps (not included in the current scaffold):
 
-- Add Firebase Auth sign-in/sign-out UI.
-- Define TODO + user profile Firestore collections and security rules.
-- Implement TODO CRUD and assignment/collaboration.
+- Add realtime updates (Firestore subscriptions or backend-mediated SSE/WebSockets)
+- Add “lists/projects” for true shared boards (so multiple users can see the exact same unassigned tasks)
+- Add richer task fields (due date, tags) and filters/views

@@ -2,13 +2,20 @@ export type TodoId = string;
 
 export type TodoStatus = "active" | "done";
 
+export type TodoPriority = "low" | "medium" | "high";
+
 export interface Todo {
   id: TodoId;
   title: string;
+  description?: string | null;
   status: TodoStatus;
 
+  createdByUid: string;
   ownerUid: string;
   assigneeUids: string[];
+
+  position: number;
+  priority: TodoPriority;
 
   createdAt: string;
   updatedAt: string;

@@ -84,3 +84,33 @@ usersRouter.get("/", async (req: Request, res: Response) => {
 
   res.status(200).json({ users });
 });
+
+usersRouter.post("/lookup", async (req: Request, res: Response) => {
+  const uid = req.auth?.uid;
+  if (!uid) {
+    res.status(401).json({ error: "Unauthenticated" });
+    return;
+  }
+
+  const uidsRaw = Array.isArray(req.body?.uids) ? req.body.uids : [];
+  const uids = uidsRaw
+    .filter((v: unknown) => typeof v === "string")
+    .map((v: string) => v.trim())
+    .filter((v: string) => v.length > 0)
+    .slice(0, 50);
+
+  if (uids.length === 0) {
+    res.status(200).json({ users: [] });
+    return;
+  }
+
+  const db = getFirestore(getFirebaseAdminApp());
+  const refs = uids.map((id: string) => db.collection("users").doc(id));
+  const snaps = await db.getAll(...refs);
+
+  const users = snaps
+    .filter((s) => s.exists)
+    .map((s) => toSummary(s.data() as UserDoc));
+
+  res.status(200).json({ users });
+});
